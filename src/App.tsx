@@ -29,7 +29,7 @@ function App() {
       {!isLoggedIn ? (
         <LoginForm onLogin={handleLogin} />
       ) : (
-        socket && <ChatRoom username={username} socket={socket} />
+        socket && <ChatRoom username={username} />
       )}
     </div>
   )
