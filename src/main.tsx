@@ -6,7 +6,7 @@ import './index.css'
 import { io } from 'socket.io-client'
 
 
-const socket = io(import.meta.env.VITE_API_URL)
+const socket = null;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
