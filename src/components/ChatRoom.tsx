@@ -31,56 +31,50 @@ function ChatRoom({ username }: ChatRoomProps) {
   const [isReconnecting, setIsReconnecting] = useState(false)
   const socketRef = useRef<Socket | null>(null)
 
-  // ✅ Use environment variable instead of hardcoding
   const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://backend-chat-kx0c.onrender.com'
 
   useEffect(() => {
-    try {
-      console.log('Connecting to backend at:', BACKEND_URL)
+    const connectSocket = async () => {
+      try {
+        console.log('Connecting to backend at:', BACKEND_URL)
 
-      if (socketRef.current) {
-        socketRef.current.disconnect()
+        if (socketRef.current) {
+          socketRef.current.disconnect()
+        }
+
+        const res = await fetch(BACKEND_URL)
+        if (!res.ok) throw new Error(`Status: ${res.status}`)
+
+        const newSocket = io(BACKEND_URL, {
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 10000,
+          withCredentials: true
+        })
+
+        newSocket.on('connect', () => {
+          console.log('Socket connected:', newSocket.id)
+          setError(null)
+        })
+
+        newSocket.on('connect_error', (err) => {
+          console.error('Connection error:', err.message)
+          setError(`Connection error: ${err.message}`)
+        })
+
+        setSocket(newSocket)
+        socketRef.current = newSocket
+      } catch (err: any) {
+        console.error('Server unreachable:', err.message)
+        setError(`Cannot connect to ${BACKEND_URL}`)
       }
+    }
 
-      fetch(BACKEND_URL)
-        .then(res => {
-          if (!res.ok) throw new Error(`Status: ${res.status}`)
-          return res.text()
-        })
-        .then(() => {
-          const newSocket = io(BACKEND_URL, {
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 10000,
-            withCredentials: true
-          })
+    connectSocket()
 
-          newSocket.on('connect', () => {
-            console.log('Socket connected:', newSocket.id)
-            setError(null)
-          })
-
-          newSocket.on('connect_error', (err) => {
-            console.error('Connection error:', err.message)
-            setError(`Connection error: ${err.message}`)
-          })
-
-          setSocket(newSocket)
-          socketRef.current = newSocket
-
-          return () => {
-            newSocket.disconnect()
-            socketRef.current = null
-          }
-        })
-        .catch(err => {
-          console.error('Server unreachable:', err.message)
-          setError(`Cannot connect to ${BACKEND_URL}`)
-        })
-
-    } catch (err) {
-      console.error('Error in connection:', err)
-      setError(`Failed to connect to server.`)
+    return () => {
+      socketRef.current?.disconnect()
+      socketRef.current = null
     }
   }, [isReconnecting])
 
