@@ -1,0 +1,50 @@
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.message {
+  padding: 0.75rem;
+  border-radius: 8px;
+  max-width: 80%;
+  word-break: break-word;
+}
+
+.own-message {
+  align-self: flex-end;
+  background-color: #646cff;
+  color: white;
+}
+
+.other-message {
+  align-self: flex-start;
+  background-color: #333;
+  color: white;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.message-username {
+  font-weight: 600;
+}
+
+.message-time {
+  opacity: 0.8;
+}
+
+.message-text {
+  line-height: 1.4;
+}
+
+.no-messages {
+  text-align: center;
+  color: #888;
+  margin: 2rem 0;
+} 
