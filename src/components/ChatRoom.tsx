@@ -72,12 +72,12 @@ function ChatRoom({ username }: ChatRoomProps) {
             reconnectionDelayMax: 5000,
             timeout: 20000,
             withCredentials: true,
-            transports: ['polling', 'websocket'],
+            transports: ['polling'],
             forceNew: true,
             autoConnect: true,
             path: '/socket.io/',
-            upgrade: true,
-            rememberUpgrade: true,
+            upgrade: false,
+            rememberUpgrade: false,
             rejectUnauthorized: false,
             extraHeaders: {
               'Content-Type': 'application/json'
@@ -95,17 +95,16 @@ function ChatRoom({ username }: ChatRoomProps) {
           
           newSocket.on('connect_error', (err) => {
             console.error('Connection error:', err.message)
-            // Try to reconnect with polling if websocket fails
-            if (newSocket.io?.opts?.transports?.[0] === 'websocket') {
-              console.log('WebSocket failed, falling back to polling')
-              if (newSocket.io?.opts) {
-                newSocket.io.opts.transports = ['polling']
+            setError(`Connection error: ${err.message}. Please make sure the backend server is running.`)
+            setConnected(false)
+            
+            // Try to reconnect after a delay
+            setTimeout(() => {
+              if (!newSocket.connected) {
+                console.log('Attempting to reconnect...')
+                newSocket.connect()
               }
-              newSocket.connect()
-            } else {
-              setError(`Connection error: ${err.message}. Please make sure the backend server is running.`)
-              setConnected(false)
-            }
+            }, 5000)
           })
           
           newSocket.on('disconnect', (reason) => {
@@ -113,16 +112,15 @@ function ChatRoom({ username }: ChatRoomProps) {
             setConnected(false)
             if (reason === 'io server disconnect') {
               // the disconnection was initiated by the server, reconnect manually
-              newSocket.connect()
+              setTimeout(() => {
+                console.log('Attempting to reconnect after server disconnect...')
+                newSocket.connect()
+              }, 1000)
             }
           })
           
           newSocket.on('reconnect_attempt', (attemptNumber) => {
             console.log('Reconnection attempt:', attemptNumber)
-            // Try polling first, then websocket
-            if (attemptNumber === 1 && newSocket.io?.opts) {
-              newSocket.io.opts.transports = ['polling', 'websocket']
-            }
           })
           
           newSocket.on('reconnect', (attemptNumber) => {
@@ -145,7 +143,9 @@ function ChatRoom({ username }: ChatRoomProps) {
           
           return () => {
             console.log('Cleanup: disconnecting socket')
-            newSocket.disconnect()
+            if (newSocket.connected) {
+              newSocket.disconnect()
+            }
             socketRef.current = null
           }
         })
