@@ -71,7 +71,14 @@ function ChatRoom({ username }: ChatRoomProps) {
             withCredentials: true,
             transports: ['websocket', 'polling'],
             forceNew: true,
-            autoConnect: true
+            autoConnect: true,
+            path: '/socket.io/',
+            upgrade: true,
+            rememberUpgrade: true,
+            rejectUnauthorized: false,
+            extraHeaders: {
+              'Access-Control-Allow-Origin': '*'
+            }
           })
           
           newSocket.on('connect', () => {
@@ -84,6 +91,15 @@ function ChatRoom({ username }: ChatRoomProps) {
             console.error('Connection error:', err.message)
             setError(`Connection error: ${err.message}. Please make sure the backend server is running.`)
             setConnected(false)
+          })
+          
+          newSocket.on('disconnect', (reason) => {
+            console.log('Socket disconnected:', reason)
+            setConnected(false)
+            if (reason === 'io server disconnect') {
+              // the disconnection was initiated by the server, reconnect manually
+              newSocket.connect()
+            }
           })
           
           setSocket(newSocket)
@@ -141,21 +157,10 @@ function ChatRoom({ username }: ChatRoomProps) {
       setUsers(data.users)
     }
     
-    // Handle disconnection
-    const handleDisconnect = (reason: string) => {
-      console.log('Disconnected:', reason)
-      if (reason === 'io server disconnect') {
-        // the disconnection was initiated by the server, reconnect manually
-        socket.connect()
-      }
-      // else the socket will automatically try to reconnect
-    }
-    
     socket.on('welcome', handleWelcome)
     socket.on('userJoined', handleUserJoined)
     socket.on('newMessage', handleNewMessage)
     socket.on('userLeft', handleUserLeft)
-    socket.on('disconnect', handleDisconnect)
     
     // Clean up event listeners
     return () => {
@@ -163,7 +168,6 @@ function ChatRoom({ username }: ChatRoomProps) {
       socket.off('userJoined', handleUserJoined)
       socket.off('newMessage', handleNewMessage)
       socket.off('userLeft', handleUserLeft)
-      socket.off('disconnect', handleDisconnect)
       socket.off('connect_error')
     }
   }, [socket, username])
