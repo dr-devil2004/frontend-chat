@@ -67,12 +67,12 @@ function ChatRoom({ username }: ChatRoomProps) {
           
           // Now connect with socket.io
           const newSocket = io(BACKEND_URL, {
-            reconnectionAttempts: 10,
+            reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
             withCredentials: true,
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             forceNew: true,
             autoConnect: true,
             path: '/socket.io/',
@@ -95,8 +95,17 @@ function ChatRoom({ username }: ChatRoomProps) {
           
           newSocket.on('connect_error', (err) => {
             console.error('Connection error:', err.message)
-            setError(`Connection error: ${err.message}. Please make sure the backend server is running.`)
-            setConnected(false)
+            // Try to reconnect with polling if websocket fails
+            if (newSocket.io?.opts?.transports?.[0] === 'websocket') {
+              console.log('WebSocket failed, falling back to polling')
+              if (newSocket.io?.opts) {
+                newSocket.io.opts.transports = ['polling']
+              }
+              newSocket.connect()
+            } else {
+              setError(`Connection error: ${err.message}. Please make sure the backend server is running.`)
+              setConnected(false)
+            }
           })
           
           newSocket.on('disconnect', (reason) => {
@@ -110,6 +119,10 @@ function ChatRoom({ username }: ChatRoomProps) {
           
           newSocket.on('reconnect_attempt', (attemptNumber) => {
             console.log('Reconnection attempt:', attemptNumber)
+            // Try polling first, then websocket
+            if (attemptNumber === 1 && newSocket.io?.opts) {
+              newSocket.io.opts.transports = ['polling', 'websocket']
+            }
           })
           
           newSocket.on('reconnect', (attemptNumber) => {
