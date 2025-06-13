@@ -46,7 +46,14 @@ function ChatRoom({ username }: ChatRoomProps) {
       }
       
       // First check if the server is reachable
-      fetch(BACKEND_URL)
+      fetch(BACKEND_URL, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
         .then(response => {
           if (!response.ok) {
             throw new Error(`Server responded with status: ${response.status}`)
@@ -61,17 +68,22 @@ function ChatRoom({ username }: ChatRoomProps) {
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             timeout: 10000,
-            withCredentials: true
+            withCredentials: true,
+            transports: ['websocket', 'polling'],
+            forceNew: true,
+            autoConnect: true
           })
           
           newSocket.on('connect', () => {
             console.log('Socket connected successfully with ID:', newSocket.id)
             setError(null)
+            setConnected(true)
           })
           
           newSocket.on('connect_error', (err) => {
             console.error('Connection error:', err.message)
             setError(`Connection error: ${err.message}. Please make sure the backend server is running.`)
+            setConnected(false)
           })
           
           setSocket(newSocket)
@@ -86,10 +98,12 @@ function ChatRoom({ username }: ChatRoomProps) {
         .catch(err => {
           console.error('Server check failed:', err.message)
           setError(`Cannot connect to server at ${BACKEND_URL}. Please make sure the backend server is running.`)
+          setConnected(false)
         })
     } catch (err) {
       console.error('Socket initialization error:', err)
       setError(`Failed to connect to chat server. Please try again later.`)
+      setConnected(false)
     }
   }, [isReconnecting])
   
