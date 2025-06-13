@@ -72,7 +72,7 @@ function ChatRoom({ username }: ChatRoomProps) {
             reconnectionDelayMax: 5000,
             timeout: 20000,
             withCredentials: true,
-            transports: ['polling', 'websocket'],
+            transports: ['websocket', 'polling'],
             forceNew: true,
             autoConnect: true,
             path: '/socket.io/',
@@ -80,7 +80,7 @@ function ChatRoom({ username }: ChatRoomProps) {
             rememberUpgrade: true,
             rejectUnauthorized: false,
             extraHeaders: {
-              'Access-Control-Allow-Origin': '*'
+              'Content-Type': 'application/json'
             },
             query: {
               username: username
