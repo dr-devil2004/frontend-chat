@@ -53,6 +53,8 @@ function ChatRoom({ username }: ChatRoomProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        cache: 'no-cache',
+        keepalive: true
       })
         .then(response => {
           if (!response.ok) {
@@ -65,11 +67,12 @@ function ChatRoom({ username }: ChatRoomProps) {
           
           // Now connect with socket.io
           const newSocket = io(BACKEND_URL, {
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 10,
             reconnectionDelay: 1000,
-            timeout: 10000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000,
             withCredentials: true,
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             forceNew: true,
             autoConnect: true,
             path: '/socket.io/',
@@ -103,6 +106,25 @@ function ChatRoom({ username }: ChatRoomProps) {
               // the disconnection was initiated by the server, reconnect manually
               newSocket.connect()
             }
+          })
+          
+          newSocket.on('reconnect_attempt', (attemptNumber) => {
+            console.log('Reconnection attempt:', attemptNumber)
+          })
+          
+          newSocket.on('reconnect', (attemptNumber) => {
+            console.log('Reconnected after', attemptNumber, 'attempts')
+            setError(null)
+            setConnected(true)
+          })
+          
+          newSocket.on('reconnect_error', (error) => {
+            console.error('Reconnection error:', error)
+          })
+          
+          newSocket.on('reconnect_failed', () => {
+            console.error('Failed to reconnect')
+            setError('Failed to reconnect to the server. Please refresh the page.')
           })
           
           setSocket(newSocket)
