@@ -78,6 +78,9 @@ function ChatRoom({ username }: ChatRoomProps) {
             rejectUnauthorized: false,
             extraHeaders: {
               'Access-Control-Allow-Origin': '*'
+            },
+            query: {
+              username: username
             }
           })
           
@@ -121,7 +124,7 @@ function ChatRoom({ username }: ChatRoomProps) {
       setError(`Failed to connect to chat server. Please try again later.`)
       setConnected(false)
     }
-  }, [isReconnecting])
+  }, [isReconnecting, username])
   
   // Set up socket event listeners
   useEffect(() => {
